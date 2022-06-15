@@ -2,8 +2,8 @@
 
 ## About
 
-Two simple Bash scripts that download and install Terraform or Terragrunt as
-securely as possible. The scripts can either be run as root, to install the
+Two simple Bash scripts that download and install AMD64 Terraform or Terragrunt
+as securely as possible. The scripts can either be run as root, to install the
 applications system-wide, or a normal user, to install the applications to the
 user's home directory.
 
@@ -31,7 +31,7 @@ Motivation:
 - Shell scripts were used as interpreters/compilers are often not
   available/advisable in containers.
 
-## Platforms
+## Platforms and architectures
 
 - I am aiming to support your bog standard, relatively up-to-date, mainstream
   Linux with GNU coreutils. i.e. Ubuntu, Debian, RHEL (and similar), Amazon
@@ -44,6 +44,9 @@ Motivation:
   Unix-like operating systems. 
 
 - Windows will definitely not be supported.
+
+- Additional architectures may work with minor modifications. See the variables
+  at the top of the scripts.
 
 ## Usage
 
