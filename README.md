@@ -101,7 +101,7 @@ Suggested installation method in a home directory (assuming you're using "$HOME/
 ```
 $ chmod u+x ./tfmanager ./tgmanager
 $ mkdir -p "$HOME/.local/bin/"
-$ mv -f ./tfmanager ./tgmanager "$HOME/.local/bin/"
+$ cp -f ./tfmanager ./tgmanager "$HOME/.local/bin/"
 $ echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
 $ source "$HOME/.bashrc"
 ```
@@ -110,7 +110,7 @@ Suggested system-wide installation method:
 ```
 # chmod 755 ./tfmanager ./tgmanager
 # chown root:root ./tfmanager ./tgmanager
-# mv -f ./tfmanager ./tgmanager /usr/bin/
+# cp -f ./tfmanager ./tgmanager /usr/bin/
 ```
 
 ### Uninstall
