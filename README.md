@@ -48,6 +48,15 @@ Motivation:
 - Additional architectures may work with minor modifications. See the variables
   at the top of the scripts.
 
+## Warning
+
+tfmanager is stateless and assumes it is the only script managing
+Terraform/Terragrunt on the system. It will overwrite existing binaries. The
+overwriting behaviour is intentional to keep the scripts simple.
+
+If you have either application installed via other means, please uninstall
+first.
+
 ## Usage
 
 Usage:
