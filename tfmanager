@@ -33,7 +33,7 @@ install_as_normal_user() {
 	mkdir -p "$USER_INSTALL_PATH"
 	chown "$(id -u)":"$(id -g)" terraform
 	mv -f terraform "$USER_INSTALL_PATH"
-	info_message_to_stderr "installed Terraform to $USER_INSTALL_PATH."
+	debug_message_to_stderr "installed Terraform to $USER_INSTALL_PATH."
 	printf "Terraform %s succesfully installed in %s.\n" \
 		"$TF_VERSION" \
 		"$USER_INSTALL_PATH"
@@ -42,18 +42,18 @@ install_as_normal_user() {
 install_as_root() {
 	chown 0:0 terraform
 	mv -f terraform "$ROOT_INSTALL_PATH"
-	info_message_to_stderr "installed Terraform to $ROOT_INSTALL_PATH."
+	debug_message_to_stderr "installed Terraform to $ROOT_INSTALL_PATH."
 	printf "Terraform %s succesfully installed in %s.\n" \
 		"$TF_VERSION" \
 		"$ROOT_INSTALL_PATH"
 }
 
 confirm_checksums_match() {
-	if ! sha256sum -c "SHA256SUMS_FILE_ARCH" 2>&1 | grep -q "$ARCH.zip: OK"; then
-		crit_message_to_stderr "$BAD_CHKSUM_MSG"
+	if ! sha256sum -c "SHA256SUMS_FILE_ARCH" 2>&1 | tee -a tfmanager_log | grep -q "$ARCH.zip: OK"; then
+		crit_error "$BAD_CHKSUM_MSG"
 		exit 1
 	fi
-	info_message_to_stderr "$GOOD_CHKSUM_MSG"
+	debug_message_to_stderr "$GOOD_CHKSUM_MSG"
 }
 
 filter_sha256sums_file() {
@@ -64,26 +64,31 @@ filter_sha256sums_file() {
 
 	local success_message
 
-	grep --color=never "$ARCH" "${SHA256SUMS_FILE}" >SHA256SUMS_FILE_ARCH
-	success_message=$(printf "succesfully extracted the arch. Contents: %s" "$(cat SHA256SUMS_FILE_ARCH)")
-	info_message_to_stderr "$success_message"
+	if ! grep --color=never "$ARCH" "${SHA256SUMS_FILE}" >SHA256SUMS_FILE_ARCH 2>>tfmanager_log; then
+		crit_error "failed to grep $SHA256SUMS_FILE"
+		exit 1
+	fi
+	success_message=$(
+		printf "succesfully extracted the arch. Contents: %s" "$(cat SHA256SUMS_FILE_ARCH)"
+	)
+	debug_message_to_stderr "$success_message"
 }
 
 verify_signature_on_sha256sums_file() {
-	if ! gpg --verify "$SIGNATURE_FILE" 2>&1 | grep -q "Good signature"; then
-		crit_message_to_stderr "$BAD_SIGNATURE_MSG"
+	if ! gpg --verify "$SIGNATURE_FILE" 2>&1 | tee -a tfmanager_log | grep "Good signature" &>>tfmanager_log; then
+		crit_error "$BAD_SIGNATURE_MSG"
 		exit 1
 	fi
-	info_message_to_stderr "$GOOD_SIGNATURE_MSG"
+	debug_message_to_stderr "$GOOD_SIGNATURE_MSG"
 }
 
 unzip_terraform_archive() {
 
-	if ! unzip "terraform_${TF_VERSION}_$ARCH.zip" &>/dev/null; then
-		crit_message_to_stderr "$UNZIP_ERROR_MSG"
+	if ! unzip "terraform_${TF_VERSION}_$ARCH.zip" &>>tfmanager_log; then
+		crit_error "$UNZIP_ERROR_MSG"
 		exit 1
 	fi
-	info_message_to_stderr \
+	debug_message_to_stderr \
 		"terraform_${TF_VERSION}_$ARCH.zip succesfully unzipped"
 }
 
@@ -94,46 +99,57 @@ download_tf_release_files() {
 	attempt_download "$TF_RELEASES/$RELEASES_ZIP_FILE"
 	attempt_download "$TF_RELEASES/$SHA256SUMS_FILE"
 	attempt_download "$TF_RELEASES/$SIGNATURE_FILE"
-	info_message_to_stderr "$(printf "files succesfully downloaded: %s" "$(find . -type f | tr '\n' ' ')")"
 }
 
 attempt_download() {
 
 	# Download $1, exit 1 printing an error message if the download fails
 
-	if ! curl -Os --fail "$1"; then
-		crit_message_to_stderr "failed to download $1"
+	if ! curl -O --fail "$1" &>>tfmanager_log; then
+		crit_error "failed to download $1"
 		exit 1
 	fi
+	debug_message_to_stderr "downloaded $1 successfully"
 }
 
 import_hashicorp_gpg_key() {
 
 	# Import the Hashicorp GPG key so it can be used to check signatures
 
-	if ! echo "$HASHICORP_GPG_KEY" | gpg --import &>/dev/null; then
-		echo "$GPG_ERROR_MSG" >>/dev/stderr
+	if ! echo "$HASHICORP_GPG_KEY" | gpg --import &>>tfmanager_log; then
+		crit_error "$GPG_ERROR_MSG"
 		exit 1
 	fi
-	info_message_to_stderr "HashiCorp GPG key successfully imported."
+	debug_message_to_stderr "$(
+		printf "%s" "HashiCorp GPG key already imported" \
+			" or successfully imported."
+	)"
 }
 
-info_message_to_stderr() {
+debug_message_to_stderr() {
 
-	# Send an INFO message to stderr if TFMANAGER_DEBUG=true
+	# Send an DEBUG message to stderr if TFMANAGER_DEBUG=true
 	# $1: the info message
 
 	if [[ $TFMANAGER_DEBUG == true ]]; then
-		printf "INFO: %s\n" "$1" >>/dev/stderr
+		printf "DEBUG: %s\n" "$1" >>/dev/stderr
 	fi
 }
 
-crit_message_to_stderr() {
+crit_error() {
 
 	# Send a CRITICAL message to stderr
+	# If tfmanager_log exists, print the content to stderr
 	# $1: the crit message
 
 	printf "CRITICAL: %s\n" "$1" >>/dev/stderr
+	if [[ -f tfmanager_log ]]; then
+		cat <<-EOF >>/dev/stderr
+			Contents of tfmanager_log file:
+
+			$(cat tfmanager_log)
+		EOF
+	fi
 }
 
 exit_clean_up() {
@@ -141,7 +157,7 @@ exit_clean_up() {
 	# Delete any temp files created
 
 	rm -rf "$TMP_DIR"
-	info_message_to_stderr "removed script temp directory: $TMP_DIR."
+	debug_message_to_stderr "removed script temp directory: $TMP_DIR."
 }
 
 setup_debug() {
@@ -155,7 +171,7 @@ setup_debug() {
 		TFMANAGER_DEBUG=false
 	else
 		if [[ $TFMANAGER_DEBUG != true ]] && [[ $TFMANAGER_DEBUG != false ]]; then
-			crit_message_to_stderr \
+			crit_error \
 				"the environment variable \$TFMANAGER_DEBUG must be true or false."
 			exit 1
 		fi
@@ -170,7 +186,7 @@ validate_first_argument() {
 				"the first argument must be the Terraform version" \
 				" to install (e.g. tfmanager 1.2.2) or --help."
 		)
-		crit_message_to_stderr "$error_message"
+		crit_error "$error_message"
 		exit 1
 	else
 		if [[ ${1:-} == "--help" ]]; then
@@ -184,7 +200,7 @@ validate_first_argument() {
 					"validation it must be a valid " \
 					"Terraform version or --help."
 			)
-			crit_message_to_stderr "$error_message"
+			crit_error "$error_message"
 			exit 1
 		fi
 	fi
@@ -219,7 +235,7 @@ define_error_messages() {
 	)
 
 	BAD_SIGNATURE_MSG=$(
-		printf "%s%s%s%s" "the signature on $SHA256SUMS_FILE doesn\'t " \
+		printf "%s%s%s%s" "the signature on $SHA256SUMS_FILE doesn't " \
 			"match HashiCorp's GPG key. Something fishy may be " \
 			"going on, or the HashiCorp GPG key may have been " \
 			"rotated. "
