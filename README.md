@@ -5,13 +5,13 @@
 Two simple Bash scripts that download and install Terraform or Terragrunt as
 securely as possible. The scripts can either be run as root, to install the
 applications system-wide, or a normal user, to install the applications to the
-users home directory.
+user's home directory.
 
 Each script takes just over a second to download and install the respective
 application on my local machine.
 
-Checksums are checked for both applications. GPG signatures are checked only for
-Terraform. The Terragrunt team does not seem to sign their releases.
+Checksums are checked for both applications. GPG signatures are checked for
+Terraform only. The Terragrunt team does not seem to sign their releases.
 
 Motivation:
 
@@ -26,7 +26,10 @@ Motivation:
   CI/CD pipelines and containers.
 
 - Installing Terraform/Terragrunt in CI/CD pipelines and containers via package
-  managers can be very slow. This method is quick.
+  managers can be very slow (30s+). This method is quick (less than 2s).
+
+- Shell scripts were used as interpreters/compilers are often not
+  available/advisable in containers.
 
 ## Platforms
 
@@ -42,6 +45,21 @@ Motivation:
 
 - Windows will definitely not be supported.
 
+## Usage
+
+Usage:
+
+```
+tfmanager [ TERRAFORM_VERSION | --help ]
+tgmanager [ TERRAGRUNT_VERSION | --help ]
+```
+
+For example:
+
+```
+$ ./tfmanager 1.2.2
+```
+
 ## Requirements
 
 - Bash.
@@ -51,31 +69,38 @@ Motivation:
 - curl.
 - grep.
 
-## Installation/usage
+Terraform and Terragrunt installed via other means may interfere depending on
+precedence on PATH.
+
+## Install locations
+
+By default, for non-root users, Terraform and Terragrunt are installed to:
+```
+$HOME/.local/bin
+```
+
+By default, for the root users, Terraform and Terragrunt are installed to:
+```
+/usr/bin
+```
+
+This is easily customizable by simply changing the variables at the top of each
+file.
+
+## Installation
 
 I suggest reading "Verify files" first.
 
 The scripts can be used anywhere on the file system or added to $PATH. They are
 both single file scripts.
 
-Make them executable:
-```
-chmod u+x ./tfmanager
-chmod u+x ./tgmanager
-```
-
-Usage:
-```
-tfmanager [ TERRAFORM_VERSION | --help ]
-tgmanager [ TERRAGRUNT_VERSION | --help ]
-```
-
 Suggested installation method in a home directory (assuming you're using "$HOME/.bashrc"):
 ```
-mkdir -p "$HOME/.local/bin/"
-mv -f ./tfmanager ./tgmanager "$HOME/.local/bin/"
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-source "$HOME/.bashrc"
+$ chmod u+x ./tfmanager ./tgmanager
+$ mkdir -p "$HOME/.local/bin/"
+$ mv -f ./tfmanager ./tgmanager "$HOME/.local/bin/"
+$ echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+$ source "$HOME/.bashrc"
 ```
 
 Suggested system-wide installation method:
@@ -85,9 +110,18 @@ Suggested system-wide installation method:
 # mv -f ./tfmanager ./tgmanager /usr/bin/
 ```
 
-### Uninstall/upgrade
+### Uninstall
 
-Simply remove or upgrade ./tfmanager and ./tgmanager.
+`cd` to the directory where you installed the scripts and: 
+
+```
+rm ./tfmanager
+rm ./tgmanager
+```
+
+### Upgrade
+
+Complete the installation steps again and simply overwrite the files.
 
 ## Verify files
 
@@ -96,7 +130,7 @@ Import my public GPG key:
 $ gpg --import res/public-key.asc
 ```
 
-Check my signature on the SHA256SUMS file:
+Check the signature on the SHA256SUMS file matches my public key:
 ```
 $ gpg --verify SHA256SUMS.gpg 
 gpg: Signature made Tue 14 Jun 2022 22:40:49 BST
@@ -124,10 +158,25 @@ came from me (unless someone stole my private key). Think of it like a seal on a
 letter.
 
 If the checksums say OK, it means they are identical to when they were on my
-local machine, at the point of release.
+local machine.
 
 In other words, we can be fairly sure the files are from me and no one has
 tampered with them.
 
 If you want to get really particular about security, you should really audit the
-code at this point. The code base is small to make this easy.
+code at this point. The code base is small to make this easy. I also encourage
+forking if you take the time to audit.
+
+## Debugging
+
+Setting the environment variable `TFMANAGER_DEBUG=true` activates a debugging
+mode. 
+
+```
+export TFMANAGER_DEBUG=true
+```
+
+Debug messages are printed to stderr.
+
+I recommend adding this environment variable as `TFMANAGER_DEBUG=false` on CI/CD
+pipelines, such that debugging mode can be toggled when necessary.
