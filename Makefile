@@ -4,7 +4,7 @@ install-home:
 	cp -f ./tfmanager ./tgmanager "$$HOME/.local/bin/"
 	@echo "Ensure $$HOME/.local/bin is on PATH"
 uninstall-home:
-	@rm -f "$$HOME/.local/bin/tfmanager" "$$HOME/.local/bin/tgmanager"
+	rm -f "$$HOME/.local/bin/tfmanager" "$$HOME/.local/bin/tgmanager"
 install-root:
 	chmod 755 ./tfmanager ./tgmanager
 	chown root:root ./tfmanager ./tgmanager

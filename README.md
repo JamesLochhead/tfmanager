@@ -71,6 +71,7 @@ $ ./tfmanager 1.2.2
 - gpg.
 - curl.
 - grep.
+- mktemp and a writable `/tmp/` directory.
 
 Terraform and Terragrunt installed via other means may interfere depending on
 precedence on PATH.
