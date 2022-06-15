@@ -10,7 +10,7 @@ install-root:
 	chown root:root ./tfmanager ./tgmanager
 	cp -f ./tfmanager ./tgmanager /usr/bin/
 uninstall-root:
-	rm -rf "/usr/bin/tgmanager" "/usr/bin/tfmanager"
+	rm -f "/usr/bin/tgmanager" "/usr/bin/tfmanager"
 create-release:
 	sha256sum tfmanager > SHA256SUMS
 	sha256sum tgmanager >> SHA256SUMS
