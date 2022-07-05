@@ -4,7 +4,7 @@ set -eEuo pipefail
 
 TMP_DIR="$(mktemp -d)"
 ARCH="linux_amd64"
-USER_INSTALL_PATH="$HOME/./bin/"
+USER_INSTALL_PATH="$HOME/.bin/"
 ROOT_INSTALL_PATH="/usr/bin"
 
 main() {
