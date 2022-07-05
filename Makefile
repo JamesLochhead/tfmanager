@@ -5,6 +5,10 @@ install-home:
 	@echo "Ensure $$HOME/.local/bin is on PATH"
 uninstall-home:
 	rm -f "$$HOME/.local/bin/tfmanager" "$$HOME/.local/bin/tgmanager"
+install-symlink:
+	 bash install-symlink.sh
+uninstall-symlink:
+	rm -f "$$HOME/.bin/tfmanager" "$$HOME/.bin/tgmanager"
 install-root:
 	chmod 755 ./tfmanager ./tgmanager
 	chown root:root ./tfmanager ./tgmanager
